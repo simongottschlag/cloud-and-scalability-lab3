@@ -22,26 +22,29 @@ resource "azurerm_resource_group" "this" {
   location = var.location_long
 }
 
-resource "azurerm_app_service_plan" "this" {
+resource "azurerm_service_plan" "this" {
   name                = local.app_service_plan_name
-  location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
-  kind                = "Linux"
-  reserved            = true
+  location            = azurerm_resource_group.this.location
+  os_type             = "Linux"
+  sku_name            = "B1"
+}
 
-  sku {
-    tier = "Basic"
-    size = "B1"
+resource "azurerm_linux_web_app" "this" {
+  name                = local.app_service_name
+  resource_group_name = azurerm_resource_group.this.name
+  location            = azurerm_resource_group.this.location
+  service_plan_id     = azurerm_service_plan.this.id
+
+  site_config {
+    application_stack {
+      node_version = "16-lts"
+    }
   }
 }
 
-resource "azurerm_app_service" "this" {
-  name                = local.app_service_name
-  location            = azurerm_resource_group.this.location
-  resource_group_name = azurerm_resource_group.this.name
-  app_service_plan_id = azurerm_app_service_plan.this.id
-
-  site_config {
-    linux_fx_version = "NODE|16-lts"
-  }
+resource "azurerm_app_service_source_control" "this" {
+  app_id   = azurerm_linux_web_app.this.id
+  repo_url = "https://github.com/simongottschlag/cloud-and-scalability-lab3"
+  branch   = "main"
 }
